@@ -5,7 +5,7 @@
 #include "csapp.h"
 
 void doit(int fd);
-void read_requesthdrs(rio_t *rp);
+int read_requesthdrs(rio_t *rp, char *method);
 int parse_uri(char *uri, char *filename, char *cgiargs);
 void serve_static(int fd, char *filename, int filesize, char *method);
 void get_filetype(char *filename, char *filetype);
@@ -75,16 +75,18 @@ void doit(int fd)
 
     /* Read request line and headers */
     Rio_readinitb(&rio, fd);
-    Rio_readlineb(&rio, buf, MAXLINE);
-    // printf("Request headers:\n");
+    if (Rio_readlineb(&rio, buf, MAXLINE) == 0)
+        return;
     printf("%s", buf);
     sscanf(buf, "%s %s %s", method, uri, version);
-    if (strcasecmp(method, "GET") && strcasecmp(method, "HEAD")) {
+    if (strcasecmp(method, "GET") && strcasecmp(method, "HEAD") && strcasecmp(method, "POST")) {
         clienterror(fd, method, "501", "Not Implemented",
                     "Tiny does not implement this method");
         return;
     }
-    read_requesthdrs(&rio);
+    int param_len = read_requesthdrs(&rio, method);
+    Rio_readnb(&rio, buf, param_len);
+    buf[param_len] = '\0';
 
     /* Parse URI from GET request */
     is_static = parse_uri(uri, filename, cgiargs);
@@ -107,6 +109,8 @@ void doit(int fd)
                         "Tiny couldn't run the CGI program");
             return;
         }
+        if (strcasecmp(method, "POST") == 0)
+            strncpy(cgiargs, buf, param_len + 1);
         serve_dynamic(fd, filename, cgiargs, method);
     }
 }
@@ -114,15 +118,18 @@ void doit(int fd)
 /*
  * read_requesthdrs - read HTTP request headers
  */
-void read_requesthdrs(rio_t *rp)
+int read_requesthdrs(rio_t *rp, char *method)
 {
-    ssize_t nread;
     char buf[MAXLINE];
     buf[0] = '\0';
+    int len = 0;
+    int is_post = (strcasecmp(method, "POST") == 0);
     while (Rio_readlineb(rp, buf, MAXLINE) && strcmp(buf, "\r\n")) {
+        if (is_post && strncasecmp(buf, "Content-Length:", 15) == 0)
+            sscanf(buf, "Content-Length: %d", &len);
         printf("%s", buf);
     }
-    return;
+    return len;
 }
 
 /*
