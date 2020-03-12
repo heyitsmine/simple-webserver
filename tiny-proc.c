@@ -1,5 +1,5 @@
 /*
- * tiny-plain.c - A simple, iterative HTTP/1.0 Web server based on processes
+ * tiny-plain.c - A simple, concurrent HTTP/1.0 Web server based on processes
  *     Created by hs on 2020/3/12.
  */
 #include "csapp.h"
