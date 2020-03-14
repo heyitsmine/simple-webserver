@@ -1,3 +1,6 @@
 .idea
 tiny
 cmake-build-debug
+tiny-plain
+tiny-proc
+tiny-select
