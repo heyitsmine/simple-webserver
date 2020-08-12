@@ -5,4 +5,7 @@ cmake-build-debug
 tiny-plain
 tiny-proc
 tiny-select
+tiny-poll
+tiny-epoll
 tiny-thread
+tiny-threadpool
